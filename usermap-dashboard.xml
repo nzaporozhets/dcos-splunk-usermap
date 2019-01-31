@@ -1,0 +1,103 @@
+<form>
+  <label>App–User mappings</label>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="search_scope">
+      <label>Search scope (cluster)</label>
+      <choice value="cluster_1">Cluster1</choice>
+      <choice value="cluster_2">Cluster2</choice>
+      <choice value="cluster_3">Cluster3</choice>
+      <default>cluster_1</default>
+    </input>
+    <input type="time" token="TimePick" searchWhenChanged="true">
+      <label>Timeframe</label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>App ownership</title>
+      <input type="link" token="group_select" searchWhenChanged="true">
+        <label>Group</label>
+        <fieldForLabel>group</fieldForLabel>
+        <fieldForValue>group</fieldForValue>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow earliest=$TimePick.earliest$ latest=$TimePick.latest$ | dedup path | rex field=_raw "path=/(?&lt;group&gt;[^/\s]*)/" | dedup group | table group</query>
+        </search>
+      </input>
+      <input type="dropdown" token="app_select" searchWhenChanged="true">
+        <label>App</label>
+        <fieldForLabel>path</fieldForLabel>
+        <fieldForValue>path</fieldForValue>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow earliest=$TimePick.earliest$ latest=$TimePick.latest$  | dedup path | rex field=_raw "path=/(?&lt;group&gt;[^/\s]*)/" | search group=$group_select$</query>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow path=$app_select$ | table uid path timestamp</query>
+          <earliest>$TimePick.earliest$</earliest>
+          <latest>$TimePick.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">preview</option>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+        <title>Spawned apps per user</title>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow | dedup path | stats count by uid</query>
+          <earliest>$TimePick.earliest$</earliest>
+          <latest>$TimePick.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Spawned apps per user</title>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow | dedup path | stats count by uid</query>
+          <earliest>$TimePick.earliest$</earliest>
+          <latest>$TimePick.latest$</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="drilldown">row</option>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+        <title>Spawned apps per Group</title>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow  | dedup path | rex field=_raw "path=/(?&lt;groupname&gt;[^/\s]*)/" | stats count by groupname</query>
+          <earliest>$TimePick.earliest$</earliest>
+          <latest>$TimePick.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>App-user mapping</title>
+        <search>
+          <query>index=$search_scope$ CreateRunSpec result=allow | table path,uid | dedup path</query>
+          <earliest>$TimePick.earliest$</earliest>
+          <latest>$TimePick.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">preview</option>
+      </table>
+    </panel>
+  </row>
+</form>
